@@ -1,8 +1,8 @@
 
 module.exports =
+	poweredBy: 'microapi (+https://github.com/bwin/microapi)'
 	port: 0
-	disableLogging: no
+	logLevel: 'trace'
 	usePmx: no
 	enableGracefulShutdown: yes
-	disablePoweredBy: no
 	cacheHeaders: yes

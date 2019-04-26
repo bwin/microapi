@@ -13,4 +13,5 @@ module.exports = router = (routes, regexRoutes, config) -> (req, res) ->
 					req.params[pathparam] = matches[idx + 1]
 				return route
 		return null
+	req.routeName = route?.name
 	return handleRoute config, route, req, res

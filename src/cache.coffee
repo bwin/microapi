@@ -10,10 +10,10 @@ redisClient = redis.createClient()
 lock = redisLock redisClient
 
 redisGet = promisify redisClient.get
-.bind redisClient
+	.bind redisClient
 
 redisMget = promisify redisClient.mget
-.bind redisClient
+	.bind redisClient
 
 redisSetex = (cacheKey, ttl, data) -> new Promise (resolve, reject) ->
 	data = try JSON.stringify data if typeof data is 'object'
@@ -45,21 +45,23 @@ module.exports = cache = (config, route, req, res) ->
 		waitedForLock = 0
 
 		if shouldCache
+			startTime = Date.now()
 			try
 				[data, headers] = await redisMget [cacheKey, cacheKeyHeaders]
 				headers = try JSON.parse headers
 			catch err
-				req.log 'warning', {type: 'cache:error', cacheKey}
+				req.log 'warning', {type: 'cache:error', cacheKey, err}
 			if data
 				# cached result found
-				req.log 'info', {type: 'cache:hit', cacheKey}
+				elapsed = Date.now() - startTime
+				req.log 'debug', {type: 'cache:hit', cacheKey, elapsed}
 				res.setHeader key, val for key, val of headers if headers
 				res.setHeader 'X-Cached', 'true'
 				return data
 			# no cached result found
 			# acquire lock
 			if route.cache.lockttl
-				startTime = Date.now()
+				startTimeLock = Date.now()
 				unlock = await acquireLock lockKey, route.cache.lockttl
 				waitedForLock = Date.now() - startTime
 				# lock acquired, recheck cache
@@ -68,13 +70,14 @@ module.exports = cache = (config, route, req, res) ->
 		if data
 			# cached result found
 			unlock?()
-			req.log 'info', {type: 'cache:hit', cacheKey, waitedForLock}
+			elapsed = Date.now() - startTime
+			req.log 'debug', {type: 'cache:hit', cacheKey, elapsed, waitedForLock}
 			res.setHeader key, val for key, val of headers if headers
 			res.setHeader 'X-Cached', 'true'
 			return data
 		else
 			# get fresh data
-			req.log 'info', {type: 'cache:miss', cacheKey}
+			req.log 'debug', {type: 'cache:miss', cacheKey}
 			try
 				data = await route.handler req, res
 			catch err

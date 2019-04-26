@@ -10,9 +10,81 @@ getStream = require 'get-stream'
 defaultConfig = require './default-config'
 routeParser = require './route-parser'
 router = require './router'
-log = require './logger'
+logger = require './logger'
 
-poweredBy = 'microapi (+https://github.com/bwin/microapi)'
+
+tmpDelay = (ms, cb) -> setTimeout cb, ms
+tmpWait = (ms) -> new Promise (resolve, reject) -> tmpDelay ms, resolve
+fakeWait = -> tmpWait Math.floor Math.random() * 250
+
+
+reqDb = (req) ->
+	query: (sql, params) ->
+		startTime = Date.now()
+		await fakeWait()
+		elapsed = Date.now() - startTime
+		req.log 'trace', {type: 'db:query', sql, elapsed}
+		return
+	transaction: (cb) ->
+		startTime = Date.now()
+		req.log 'trace', {type: 'db:transaction:begin'}
+		try
+			await cb req.db
+			elapsed = Date.now() - startTime
+			req.log 'trace', {type: 'db:transaction:end', elapsed}
+		catch err
+			elapsed = Date.now() - startTime
+			req.log 'trace', {type: 'db:transaction:rollback:begin', elapsed}
+			startTimeRollback = Date.now()
+			await fakeWait()
+			elapsed = Date.now() - startTimeRollback
+			req.log 'trace', {type: 'db:transaction:rollback:end', elapsed}
+		return
+
+reqCache = (req) ->
+	load: (key) ->
+		startTime = Date.now()
+		await fakeWait()
+		elapsed = Date.now() - startTime
+		req.log 'trace', {type: 'cache:load', key, elapsed}
+		return
+	save: (key, val, ttl) ->
+		startTime = Date.now()
+		await fakeWait()
+		elapsed = Date.now() - startTime
+		req.log 'trace', {type: 'cache:save', key, ttl, elapsed}
+		return
+
+addToObject = (obj, objToAdd) ->
+	obj[key] = val for key, val of objToAdd
+	return
+
+extendReqRes = (req, res, log) ->
+	{pathname, query} = url.parse req.url, yes
+	isGetReq = req.method is 'GET'
+	body =
+		if isGetReq then null
+		else
+			await getStream(req).then (str) -> try JSON.parse str
+
+	addToObject req, {
+		id: uuidv4()
+		log: (level, data) -> log level, {reqid: req.id, data...}
+		pathname
+		path: pathname
+		ip: req.headers['X-Forwared-For'] or res.socket.remoteAddress
+		begin: Date.now()
+		params: {}
+		data: {}
+		query: if isGetReq then query else {}
+		body: body
+		sourceParams: if isGetReq then query else body
+		db: reqDb req
+		cache: reqCache req
+	}
+
+	res.data = {}
+	return
 
 module.exports = microserver =
 	start: (config, routeDefinitions) ->
@@ -20,11 +92,13 @@ module.exports = microserver =
 
 		throw new Error "no id specified in config." unless config.id
 
-		log.disable() if config.disableLogging
+		log =
+			if config.logLevel is 'off' then ->
+			else logger config.id, config.logLevel
 		log 'info', type: 'start'
 
 		{routes, regexRoutes} = routeParser routeDefinitions
-		handleRoute = router(routes, regexRoutes, config)
+		handleRoute = router routes, regexRoutes, config
 
 		if config.usePmx
 			try
@@ -58,6 +132,8 @@ module.exports = microserver =
 					reqCounter.dec()
 					latencyHistogram.update Date.now() - req.begin
 					return
+
+			###
 			parsedUrl = url.parse req.url, yes
 			req.id = uuidv4()
 			req.pathname = req.path = parsedUrl.pathname
@@ -74,12 +150,27 @@ module.exports = microserver =
 			res.data = {}
 
 			req.log = (level, data) -> log level, {reqid: req.id, data...}
+			###
 
-			res.setHeader 'X-Powered-By', poweredBy unless config.disablePoweredBy
+			await extendReqRes req, res, log
+
+			{method, path, ip, headers, query, body} = req
+			req.log 'info', {
+				type: 'request'
+				method
+				path
+				ip
+				headers
+				query: if method is 'GET' then query
+				body: if method isnt 'GET' then body
+			}
+
+			res.setHeader 'Content-Type', 'application/json'
+			res.setHeader 'X-Powered-By', config.poweredBy if config.poweredBy
 
 			result = null
 			try
-				result = await handleRoute req, res
+				result = await handleRoute req, res, config
 			catch err
 				res.statusCode = err.statusCode or 500
 				req.log err
@@ -87,17 +178,18 @@ module.exports = microserver =
 					type: err.name
 					msg: err.message
 
-			res.writeHead res.statusCode, 'Content-Type': 'application/json'
 			json = result
 			json = JSON.stringify json if typeof json is 'object'
 			res.end json
+
 			req.log 'info',
 				type: 'response'
 				statusCode: res.statusCode
+				route: req.routeName
 				body: result
 				headers: res.getHeaders()
 				len: json.length
-				ms: Date.now() - req.begin
+				elapsed: Date.now() - req.begin
 			return
 
 		server.ready = new Promise (resolve, reject) ->

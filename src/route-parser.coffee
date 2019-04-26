@@ -1,10 +1,18 @@
 
 ms = require 'ms'
 escapeRegex = require 'escape-string-regexp'
-{defaultsDeep} = require 'lodash'
+_ = require 'lodash'
+{defaultsDeep} = _
 
 validMethods = 'HEAD GET POST PUT DELETE'.split ' '
 validTypes = 'int string date'.split ' '
+
+isArrayEqual = (a, b) ->
+	a = [a] unless Array.isArray a
+	b = [b] unless Array.isArray b
+	return no unless a.length is b.length
+	#return _.isEqual _.sortBy(a), _.sortBy(b)
+	return _.isEqual a, b # in our case they are already in the same order
 
 module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 	routes = {}
@@ -17,11 +25,11 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 		else if typeof routeOpts isnt 'object'
 			throw new Error "opts should either be 'object', 'array' or 'function'"
 		opts = defaultsDeep {}, routeOpts, namespaceOpts
-		delete opts.path
-		delete opts.routes
 
 		[method, path] = key.split ' '
 		method = method?.toUpperCase()
+		opts.name = path
+
 		if path.startsWith '^'
 			path = path.substr 1
 		else
@@ -30,17 +38,31 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 
 		# non-GET routes can inherit cache opts
 		# remove them, otherwise we throw an error because its not allowed
-		delete routeOpts.cache if method isnt 'GET' and namespaceOpts.cache?
+		delete opts.cache if method isnt 'GET' and namespaceOpts.cache?
 
 		if method is 'NAMESPACE'
+			delete opts.routes
+
 			opts.path = path
+			
+			# namespace middleware handling
+			if namespaceOpts.middleware? and opts.middleware?
+				unless isArrayEqual namespaceOpts.middleware, opts.middleware
+					opts.middleware = [].concat namespaceOpts.middleware, opts.middleware
+
 			newRoutes = routeParser routeOpts.routes, opts
 			routes = defaultsDeep {}, routes, newRoutes.routes
 			regexRoutes = defaultsDeep {}, regexRoutes, newRoutes.regexRoutes
 		else # endpoint
 			throw new Error "invalid method '#{method}" unless method in validMethods
 
-			# middleware handling
+			delete opts.middleware
+
+			# namespace middleware handling
+			if namespaceOpts.middleware?
+				opts.handler = [].concat namespaceOpts.middleware, opts.handler
+
+			# endpoint middleware handling
 			if Array.isArray opts.handler
 				arr = opts.handler
 				opts.handler = do (arr) -> (req, res) ->

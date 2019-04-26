@@ -11,8 +11,8 @@
   "scripts": {
     "coverage": "yarn pretest && yarn nyc -n lib/ ava",
     "lint": "yarn coffeelint -q -f coffeelint.json src/",
-    "prepare": "rm -r lib/ > /dev/null ; yarn coffee -o lib/ -c src/",
-    "pretest": "rm -r .test/ > /dev/null ; yarn prepublish && yarn coffee -o .test/ -c test/",
+    "prepare": "rm -r lib/ &>/dev/null ; yarn coffee -o lib/ -c src/",
+    "pretest": "rm -r .test/ &>/dev/null ; yarn prepare && yarn coffee -o .test/ -c test/",
     "test": "yarn ava",
     "testv": "yarn test -v",
     "testn": "yarn test -t | tap-nyan",
@@ -34,6 +34,7 @@
     "get-stream": "^5.1.0",
     "http-errors": "^1.7.2",
     "jsonwebtoken": "^8.5.1",
+    "lodash": "^4.17.11",
     "ms": "^2.1.1",
     "redis": "^2.8.0",
     "redis-lock": "^0.1.4",

@@ -9,6 +9,11 @@
   - date
 - test ratelimiter with obj-key
 
+- 'GET /stream':
+    stream: yes
+    handler: (req, res) ->
+  - also test this
+
 - differentiate between
   - cache (handles prefixing, locking, etc)
   - routeCache (uses cache, sets headers)

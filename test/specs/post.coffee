@@ -6,7 +6,11 @@ config = require '../test-config'
 post = require '../post'
 
 server = null
-
+console.log "____________________"
+console.log "____________________"
+console.log "ssds"
+console.log "____________________"
+console.log "____________________"
 test.before (t) ->
 	server = microapi.start config,
 		'POST /post-here':
