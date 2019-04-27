@@ -1,6 +1,7 @@
 
 {promisify} = require 'util'
 
+ms = require 'ms'
 redis = require 'redis'
 redisLock = require 'redis-lock'
 
@@ -17,79 +18,117 @@ redisMget = promisify redisClient.mget
 
 redisSetex = (cacheKey, ttl, data) -> new Promise (resolve, reject) ->
 	data = try JSON.stringify data if typeof data is 'object'
-	#console.log "*** redisSetex", cacheKey, ttl, data
+	ttl = ms ttl if typeof ttl isnt 'number'
 	redisClient.setex cacheKey, ttl, data, (err) ->
 		return reject err if err
 		return resolve()
 	return
 
-acquireLock = (lockKey, ttl) -> new Promise (resolve, reject) ->
-	lock lockKey, ttl, (unlock) -> resolve unlock
+acquireLock = (lockKey, lockTimeout) -> new Promise (resolve, reject) ->
+	lockTimeout = ms lockTimeout if typeof lockTimeout isnt 'number'
+	lock lockKey, lockTimeout, (unlock) -> resolve unlock
 	return
 
-module.exports = cache = (config, route, req, res) ->
-	try
-		cacheKey = convertkey route.cache.key? req
-		{id} = config
-		cacheKey = "microapi:#{id}:cache:data:#{cacheKey}"
-		cacheKeyHeaders = "microapi:#{id}:cache:headers:#{cacheKey}"
-		lockKey = "microapi:#{id}:lock:#{cacheKey}"
-		#lockKey = cacheKey.replace ':cache:', ':lock:'
-		shouldCache = yes
-		shouldCache = route.cache.shouldCache req if route.cache.shouldCache?
-		res.shouldCache = shouldCache
-		cachedVal = null
-		data = null
-		headers = null
-		unlock = null
-		waitedForLock = 0
 
-		if shouldCache
+
+
+###
+	CACHE is no normal mw (its like log)
+	bec resp-cache needs to use it, it needs to be on every route
+
+# cache normal (in-app)
+await cache 'xy', ttl: '10s', -> data: '...'
+
+# cache response
+await cache 'xy', ttl: '10s',
+	-> data: '...'
+, -> no
+
+
+###
+
+
+
+
+
+module.exports = createCache = (id, log) ->
+	cache = (key, opts, cb, shouldCache=yes) ->
+		{ttl} = opts
+		lockTimeout = opts.lock
+
+		try
+			keyStr = convertkey key
+			cacheKey = "microapi:#{id}:cache:#{keyStr}"
+			lockKey = "microapi:#{id}:lock:#{keyStr}"
+
+			data = null
+			unlock = null
+			waitedForLock = 0
+
 			startTime = Date.now()
 			try
-				[data, headers] = await redisMget [cacheKey, cacheKeyHeaders]
-				headers = try JSON.parse headers
+				data = await redisGet cacheKey
 			catch err
-				req.log 'warning', {type: 'cache:error', cacheKey, err}
+				log 'warning', {type: 'cache:error', cacheKey, err}
 			if data
 				# cached result found
 				elapsed = Date.now() - startTime
-				req.log 'debug', {type: 'cache:hit', cacheKey, elapsed}
-				res.setHeader key, val for key, val of headers if headers
-				res.setHeader 'X-Cached', 'true'
+				log 'debug', {type: 'cache:hit', cacheKey, elapsed}
 				return data
 			# no cached result found
 			# acquire lock
-			if route.cache.lockttl
+			if lockTimeout
 				startTimeLock = Date.now()
-				unlock = await acquireLock lockKey, route.cache.lockttl
+				unlock = await acquireLock lockKey, lockTimeout
 				waitedForLock = Date.now() - startTime
 				# lock acquired, recheck cache
-				[data, headers] = await redisMget [cacheKey, cacheKeyHeaders]
-				headers = try JSON.parse headers
-		if data
-			# cached result found
-			unlock?()
-			elapsed = Date.now() - startTime
-			req.log 'debug', {type: 'cache:hit', cacheKey, elapsed, waitedForLock}
-			res.setHeader key, val for key, val of headers if headers
-			res.setHeader 'X-Cached', 'true'
-			return data
-		else
-			# get fresh data
-			req.log 'debug', {type: 'cache:miss', cacheKey}
-			try
-				data = await route.handler req, res
-			catch err
+				data = await redisGet cacheKey
+			if data
+				# cached result found
 				unlock?()
-				throw err
-			if data and res.shouldCache
-				# set cache
-				await redisSetex cacheKey, route.cache.ttl, data
-				if config.cacheHeaders
-					headers = res.getHeaders()
-					await redisSetex cacheKeyHeaders, route.cache.ttl, headers
-			unlock?()
-	catch err
-		throw err
-	return data
+				elapsed = Date.now() - startTime
+				log 'debug', {type: 'cache:hit', cacheKey, elapsed, waitedForLock}
+				return data
+			else
+				# get fresh data
+				log 'debug', {type: 'cache:miss', cacheKey}
+				try
+					data = cb()
+				catch err
+					unlock?()
+					throw err
+
+				shouldCache = shouldCache() if typeof shouldCache is 'function'
+				if data and shouldCache
+					# set cache
+					await redisSetex cacheKey, ttl, data
+				unlock?()
+		catch err
+			throw err
+		return data
+
+	cache.load = (key) ->
+		startTime = Date.now()
+		key = convertkey key
+		result = await redisGet key
+		elapsed = Date.now() - startTime
+		log 'trace', {type: 'cache:load', key, elapsed}
+		return result
+
+	cache.loadMulti = (keys) ->
+		startTime = Date.now()
+		keys = keys.map (key) -> convertkey key
+		results = await redisMget keys
+		elapsed = Date.now() - startTime
+		log 'trace', {type: 'cache:loadMulti', keys, elapsed}
+		return results
+
+	cache.save = (key, ttl, data) ->
+		startTime = Date.now()
+		key = convertkey key
+		await redisSetex key, ttl, data
+		elapsed = Date.now() - startTime
+		log 'trace', {type: 'cache:save', key, ttl, elapsed}
+		return
+
+	return cache

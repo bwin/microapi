@@ -1,7 +1,5 @@
 
-handleRoute = require './handler'
-
-module.exports = router = (routes, regexRoutes, config) -> (req, res) ->
+module.exports = createRouter = (routes, regexRoutes) -> (req, res) ->
 	{pathname, method} = req
 	route = routes[pathname]?[method]
 	route or= do ->
@@ -14,4 +12,4 @@ module.exports = router = (routes, regexRoutes, config) -> (req, res) ->
 				return route
 		return null
 	req.routeName = route?.name
-	return handleRoute config, route, req, res
+	return route

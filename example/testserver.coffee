@@ -90,13 +90,13 @@ microapi.start config,
 			mwB1, mwB2
 			mwA1, mwA2
 			(req, res) ->
-				await req.db.query "SELECT * FROM games"
-				await req.db.transaction (db) ->
-					await db.query "SELECT * FROM items"
-					await db.query "SELECT * FROM subitems"
-					return
-				await req.cache.load "cachedVal"
-				await req.cache.save "cachedVal", "someVal", "10s"
+				#await req.db.query "SELECT * FROM games"
+				#await req.db.transaction (db) ->
+				#	await db.query "SELECT * FROM items"
+				#	await db.query "SELECT * FROM subitems"
+				#	return
+				#await req.cache.load "cachedVal"
+				#await req.cache.save "cachedVal", "someVal", "10s"
 				return x: 'OKOK'
 		]
 

@@ -1,90 +1,18 @@
 
 http = require 'http'
-url = require 'url'
 
 pmx = null
-uuidv4 = require 'uuid/v4'
-getStream = require 'get-stream'
 {defaultsDeep} = require 'lodash'
 
 defaultConfig = require './default-config'
 routeParser = require './route-parser'
-router = require './router'
+createRouter = require './router'
 logger = require './logger'
+createCache = require './cache'
+extendReqRes = require './extend-req-res'
+handleRoute = require './handler'
 
 
-tmpDelay = (ms, cb) -> setTimeout cb, ms
-tmpWait = (ms) -> new Promise (resolve, reject) -> tmpDelay ms, resolve
-fakeWait = -> tmpWait Math.floor Math.random() * 250
-
-
-reqDb = (req) ->
-	query: (sql, params) ->
-		startTime = Date.now()
-		await fakeWait()
-		elapsed = Date.now() - startTime
-		req.log 'trace', {type: 'db:query', sql, elapsed}
-		return
-	transaction: (cb) ->
-		startTime = Date.now()
-		req.log 'trace', {type: 'db:transaction:begin'}
-		try
-			await cb req.db
-			elapsed = Date.now() - startTime
-			req.log 'trace', {type: 'db:transaction:end', elapsed}
-		catch err
-			elapsed = Date.now() - startTime
-			req.log 'trace', {type: 'db:transaction:rollback:begin', elapsed}
-			startTimeRollback = Date.now()
-			await fakeWait()
-			elapsed = Date.now() - startTimeRollback
-			req.log 'trace', {type: 'db:transaction:rollback:end', elapsed}
-		return
-
-reqCache = (req) ->
-	load: (key) ->
-		startTime = Date.now()
-		await fakeWait()
-		elapsed = Date.now() - startTime
-		req.log 'trace', {type: 'cache:load', key, elapsed}
-		return
-	save: (key, val, ttl) ->
-		startTime = Date.now()
-		await fakeWait()
-		elapsed = Date.now() - startTime
-		req.log 'trace', {type: 'cache:save', key, ttl, elapsed}
-		return
-
-addToObject = (obj, objToAdd) ->
-	obj[key] = val for key, val of objToAdd
-	return
-
-extendReqRes = (req, res, log) ->
-	{pathname, query} = url.parse req.url, yes
-	isGetReq = req.method is 'GET'
-	body =
-		if isGetReq then null
-		else
-			await getStream(req).then (str) -> try JSON.parse str
-
-	addToObject req, {
-		id: uuidv4()
-		log: (level, data) -> log level, {reqid: req.id, data...}
-		pathname
-		path: pathname
-		ip: req.headers['X-Forwared-For'] or res.socket.remoteAddress
-		begin: Date.now()
-		params: {}
-		data: {}
-		query: if isGetReq then query else {}
-		body: body
-		sourceParams: if isGetReq then query else body
-		db: reqDb req
-		cache: reqCache req
-	}
-
-	res.data = {}
-	return
 
 module.exports = microserver =
 	start: (config, routeDefinitions) ->
@@ -97,8 +25,10 @@ module.exports = microserver =
 			else logger config.id, config.logLevel
 		log 'info', type: 'start'
 
+		cache = createCache config.id, log
+
 		{routes, regexRoutes} = routeParser routeDefinitions
-		handleRoute = router routes, regexRoutes, config
+		router = createRouter routes, regexRoutes
 
 		if config.usePmx
 			try
@@ -133,26 +63,7 @@ module.exports = microserver =
 					latencyHistogram.update Date.now() - req.begin
 					return
 
-			###
-			parsedUrl = url.parse req.url, yes
-			req.id = uuidv4()
-			req.pathname = req.path = parsedUrl.pathname
-			req.query = parsedUrl.query
-			req.ip = req.headers['X-Forwared-For'] or res.socket.remoteAddress
-			req.begin = Date.now()
-			if req.method isnt 'GET'
-				req.body = await getStream req
-				.then (str) -> try JSON.parse str
-			req.sourceParams = if req.method is 'GET' then req.query else req.body
-			req.params = {}
-			req.data = {}
-			
-			res.data = {}
-
-			req.log = (level, data) -> log level, {reqid: req.id, data...}
-			###
-
-			await extendReqRes req, res, log
+			await extendReqRes req, res, log, cache
 
 			{method, path, ip, headers, query, body} = req
 			req.log 'info', {
@@ -168,9 +79,12 @@ module.exports = microserver =
 			res.setHeader 'Content-Type', 'application/json'
 			res.setHeader 'X-Powered-By', config.poweredBy if config.poweredBy
 
+			route = router req, res
+
 			result = null
 			try
-				result = await handleRoute req, res, config
+				#result = await handleRoute req, res, config
+				result = await handleRoute config, cache, route, req, res
 			catch err
 				res.statusCode = err.statusCode or 500
 				req.log err
