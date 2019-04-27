@@ -17,7 +17,7 @@ module.exports = responseCache = (config, cache, route, req, res) ->
 
 		if shouldCache
 			#startTime = Date.now()
-			[data, headers] = await cache.loadMulti [cacheKey, cacheKeyHeaders]
+			[data, headers] = await cache.loadMulti [cacheKey, cacheKeyHeaders], no
 			headers = try JSON.parse headers
 
 		if data

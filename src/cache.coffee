@@ -49,8 +49,6 @@ await cache 'xy', ttl: '10s',
 
 
 
-
-
 module.exports = createCache = (id, log) ->
 	cache = (key, opts, cb, shouldCache=yes) ->
 		{ttl} = opts
@@ -68,6 +66,7 @@ module.exports = createCache = (id, log) ->
 			startTime = Date.now()
 			try
 				data = await redisGet cacheKey
+				data = try JSON.parse data
 			catch err
 				log 'warning', {type: 'cache:error', cacheKey, err}
 			if data
@@ -83,6 +82,7 @@ module.exports = createCache = (id, log) ->
 				waitedForLock = Date.now() - startTime
 				# lock acquired, recheck cache
 				data = await redisGet cacheKey
+				data = try JSON.parse data
 			if data
 				# cached result found
 				unlock?()
@@ -107,18 +107,21 @@ module.exports = createCache = (id, log) ->
 			throw err
 		return data
 
-	cache.load = (key) ->
+	cache.load = (key, asObject=yes) ->
 		startTime = Date.now()
 		key = convertkey key
 		result = await redisGet key
+		result = try JSON.parse result if asObject
 		elapsed = Date.now() - startTime
 		log 'trace', {type: 'cache:load', key, elapsed}
 		return result
 
-	cache.loadMulti = (keys) ->
+	cache.loadMulti = (keys, asObject=yes) ->
 		startTime = Date.now()
 		keys = keys.map (key) -> convertkey key
 		results = await redisMget keys
+		if asObject
+			results = results.map (result) -> try JSON.parse result
 		elapsed = Date.now() - startTime
 		log 'trace', {type: 'cache:loadMulti', keys, elapsed}
 		return results
