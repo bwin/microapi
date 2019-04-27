@@ -27,7 +27,12 @@ test.after (t) -> await server?.stop()
 
 
 invalidJwt = 'xxx'
+
+# userId: 1234
 validJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEyMzR9.YDogdI-UqRfThM2yWHJbpqL6Ellp2wQkV1xuqUnhDBw'
+
+# userId: 1234
+# roles: ["admin"]
 adminJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEyMzQsInJvbGVzIjpbImFkbWluIl19.N5NgxtL_4MI82K8U9xes6C5hzwericTEVBtxM9t7MAc'
 
 test 'auth: should reject without jwt', (t) ->

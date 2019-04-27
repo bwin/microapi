@@ -28,7 +28,7 @@ module.exports = checkparams = (route, req, res) ->
 				if typeof val is 'object' then val
 				else if typeof val is 'string' then try JSON.parse val
 			when 'array'
-				val try JSON.parse val if typeof val is 'string'
+				val = (try JSON.parse val) if typeof val is 'string'
 				if Array.isArray val then val
 				else null
 			else val

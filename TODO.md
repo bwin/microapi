@@ -1,6 +1,8 @@
 
 # TODO
 
+- call res.done() in middleware to signal that no further mw should be processed
+
 - TEST NAMESPACES
 - test 2 servers with same port should fail (and improve coverage)
 - lookat npm/deep-metrics
