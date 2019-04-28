@@ -17,6 +17,12 @@ test.before (t) ->
 			cache: ttl: '1s', key: (req) -> req.path
 			handler: (req, res) -> somevalue: 'XY18'
 
+		'GET /cache-with-headers':
+			cache: ttl: '1s', key: (req) -> req.path
+			handler: (req, res) ->
+				res.setHeader 'X-Test-Header', 123
+				return somevalue: 'XY18'
+
 		'GET /cache-if':
 			params: x: 'int'
 			cache:
@@ -82,6 +88,26 @@ test 'should cache', (t) ->
 	t.deepEqual response.body, expectedResponse
 	# req after cooldown shouldn't be cached
 	t.is response.headers['x-cached'], undefined
+	return
+
+test 'should cache headers, too', (t) ->
+	expectedResponse = somevalue: 'XY18'
+
+	response = await get '/cache-with-headers'
+	t.is response.statusCode, 200
+	t.deepEqual response.body, expectedResponse
+	# 1st req shouldn't be cached
+	t.is response.headers['x-cached'], undefined
+	# we expect the header to be set
+	t.is response.headers['x-test-header'], '123'
+
+	response = await get '/cache-with-headers'
+	t.is response.statusCode, 200
+	t.deepEqual response.body, expectedResponse
+	# 2nd req should be cached
+	t.is response.headers['x-cached'], 'true'
+	# we expect the header to be set
+	t.is response.headers['x-test-header'], '123'
 	return
 
 test 'should cache with obj as cache key', (t) ->

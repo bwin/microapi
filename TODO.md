@@ -5,13 +5,6 @@
 - call res.done() in middleware to signal that no further mw should be processed
   - ... while res.__continueExecution
 
-- lockTtl becomes lockTimeout or just lock ??
-- differentiate between
-  - cache (handles prefixing, locking, etc)
-  - routeCache (uses cache, sets headers)
-- give cache to route-handlers, so they may easily cache
-  (and optional use locking on) partial data [optCbUseCache]
-
 - maybe middleware becomes before/after
 
 - TEST NAMESPACES
@@ -19,10 +12,7 @@
 - test params
   - bool
   - date
-- test more jwt (expired, invalid, alg:none)
-- test middleware
-- test cache: load/loadMulti/save/acquireLock
-- test cache headers
+- test cache: load/loadMulti/save/acquireLock/cbShouldCache
 
 
 - middleware:

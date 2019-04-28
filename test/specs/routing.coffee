@@ -18,14 +18,6 @@ test.before (t) ->
 
 		'GET /regex/@:username/post-:postId': (req, res) -> req.params
 
-		'GET /middleware': [
-			(req, res) -> req.data.xy18 = 23
-			(req, res) -> result: req.data.xy18
-			(req, res) ->
-				res.data.xy23 = 42
-				return res.data
-		]
-
 	port = await server.ready
 	get.baseUrl = "http://127.0.0.1:#{port}"
 	return
@@ -57,12 +49,4 @@ test 'complex regex route should work', (t) ->
 	t.deepEqual response.body,
 		postId: '987654'
 		username: 'exampleuser'
-	return
-
-test 'multiple handlers should work', (t) ->
-	response = await get '/middleware'
-	t.is response.statusCode, 200
-	t.deepEqual response.body,
-		result: 23
-		xy23: 42
 	return

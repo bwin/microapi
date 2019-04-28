@@ -82,7 +82,10 @@ module.exports = microserver =
 				body: if method isnt 'GET' then body
 			}
 
-			res.setHeader 'Content-Type', 'application/json'
+			if route?.type?
+				res.setHeader 'Content-Type', route.type
+			else
+				res.setHeader 'Content-Type', 'application/json'
 			res.setHeader 'X-Powered-By', config.poweredBy if config.poweredBy
 
 			result = null
