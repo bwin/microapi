@@ -14,18 +14,17 @@ isArrayEqual = (a, b) ->
 	#return _.isEqual _.sortBy(a), _.sortBy(b)
 	return _.isEqual a, b # in our case they are already in the same order
 
-module.exports = routeParser = (routeDefinitions, namespaceOpts={}, routes={}, 
-regexRoutes={}) ->
+module.exports = routeParser = (defs, nsOpts={}, routes={}, regexRoutes={}) ->
 	#routes = {}
 	#regexRoutes = {}
 
-	for key, routeOpts of routeDefinitions
+	for key, routeOpts of defs
 		if typeof routeOpts is 'function' or Array.isArray routeOpts
 			handler = routeOpts
 			routeOpts = {handler}
 		else if typeof routeOpts isnt 'object'
 			throw new Error "opts should either be 'object', 'array' or 'function'"
-		opts = defaultsDeep {}, routeOpts, namespaceOpts
+		opts = defaultsDeep {}, routeOpts, nsOpts
 
 		[method, path] = key.split ' '
 		method = method?.toUpperCase()
@@ -34,12 +33,12 @@ regexRoutes={}) ->
 		if path.startsWith '^'
 			path = path.substr 1
 		else
-			path = namespaceOpts.path + path if namespaceOpts.path
+			path = nsOpts.path + path if nsOpts.path
 			path = path.replace /\/+/, '/' # replace multiple /'s
 
 		# non-GET routes can inherit cache opts
 		# remove them, otherwise we throw an error because its not allowed
-		delete opts.cache if method isnt 'GET' and namespaceOpts.cache?
+		delete opts.cache if method isnt 'GET' and nsOpts.cache?
 
 		if method is 'NAMESPACE'
 			delete opts.routes
@@ -47,9 +46,9 @@ regexRoutes={}) ->
 			opts.path = path
 			
 			# namespace middleware handling
-			if namespaceOpts.middleware? and opts.middleware?
-				unless isArrayEqual namespaceOpts.middleware, opts.middleware
-					opts.middleware = [].concat namespaceOpts.middleware, opts.middleware
+			if nsOpts.middleware? and opts.middleware?
+				unless isArrayEqual nsOpts.middleware, opts.middleware
+					opts.middleware = [].concat nsOpts.middleware, opts.middleware
 
 			routeParser routeOpts.routes, opts, routes, regexRoutes
 			#newRoutes = routeParser routeOpts.routes, opts
@@ -61,8 +60,8 @@ regexRoutes={}) ->
 			delete opts.middleware
 
 			# namespace middleware handling
-			if namespaceOpts.middleware?
-				opts.handler = [].concat namespaceOpts.middleware, opts.handler
+			if nsOpts.middleware?
+				opts.handler = [].concat nsOpts.middleware, opts.handler
 
 			# endpoint middleware handling
 			if Array.isArray opts.handler
@@ -70,7 +69,8 @@ regexRoutes={}) ->
 				opts.handler = do (arr) -> (req, res) ->
 					for fn in arr
 						if fn.length is 3 # connect-style middleware
-							fn = do (fn) -> (req, res) -> new Promise (resolve) -> fn req, res, resolve
+							fn = do (fn) -> (req, res) -> new Promise (resolve) ->
+								return fn req, res, resolve
 						data = await fn req, res
 						res.data = data if data
 					return res.data
@@ -100,10 +100,10 @@ regexRoutes={}) ->
 
 			if opts.cache?
 				if method isnt 'GET'
-					throw new Error "cache: cannot use cache for #{method} requests at #{path}"
+					throw new Error "cannot use cache for #{method} requests at #{path}"
 
 				if opts.stream is yes
-					throw new Error "cache: cannot use cache for requests that stream at #{path}"
+					throw new Error "cannot use cache for requests that stream at #{path}"
 
 				if opts.cache.ttl and typeof opts.cache.ttl not in ['string', 'number']
 					throw new Error 'ttl expected to be `ms` compatible string or number'
