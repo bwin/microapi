@@ -6,3 +6,4 @@ module.exports =
 	usePmx: no
 	enableGracefulShutdown: yes
 	cacheHeaders: yes
+	debugLogErrors: no

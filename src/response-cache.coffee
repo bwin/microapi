@@ -7,6 +7,9 @@ module.exports = responseCache = (config, cache, route, req, res) ->
 		cacheKey = "data:#{cacheKey}"
 		cacheKeyHeaders = "headers:#{cacheKey}"
 
+		lockTimeout = route.cache.lock
+		lockTimeout = ms lockTimeout if typeof lockTimeout is 'string'
+
 		shouldCache = yes
 		shouldCache = route.cache.shouldCache req if route.cache.shouldCache?
 		res.shouldCache = shouldCache
@@ -28,6 +31,25 @@ module.exports = responseCache = (config, cache, route, req, res) ->
 			res.setHeader 'X-Cached', 'true'
 			return data
 		else
+			# no cached result found
+			# acquire lock
+			if lockTimeout
+				#startTimeLock = Date.now()
+				unlock = await acquireLock cacheKey, lockTimeout
+				#waitedForLock = Date.now() - startTime
+				
+				# lock acquired, recheck cache
+				[data, headers] = await cache.loadMulti [cacheKey, cacheKeyHeaders], no
+				headers = try JSON.parse headers
+
+				if data
+					# cached result found
+					unlock?()
+					elapsed = Date.now() - startTime
+					#log 'debug', {type: 'cache:hit', cacheKey, elapsed, waitedForLock}
+					return data
+
+
 			# get fresh data
 			#req.log 'debug', {type: 'cache:miss', cacheKey}
 			try

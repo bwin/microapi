@@ -17,15 +17,20 @@ redisMget = promisify redisClient.mget
 	.bind redisClient
 
 redisSetex = (cacheKey, ttl, data) -> new Promise (resolve, reject) ->
+	unless typeof ttl in ['string', 'number']
+		throw new Error 'ttl expected to be `ms` compatible string or number'
 	data = try JSON.stringify data if typeof data is 'object'
-	ttl = ms ttl if typeof ttl isnt 'number'
+	ttl = ms ttl if typeof ttl is 'string'
+	ttl /= 1000 # redis expects ttl in s
 	redisClient.setex cacheKey, ttl, data, (err) ->
 		return reject err if err
 		return resolve()
 	return
 
 acquireLock = (lockKey, lockTimeout) -> new Promise (resolve, reject) ->
-	lockTimeout = ms lockTimeout if typeof lockTimeout isnt 'number'
+	unless typeof ttl in ['string', 'number']
+		throw new Error 'ttl expected to be `ms` compatible string or number'
+	ttl = ms ttl if typeof ttl is 'string'
 	lock lockKey, lockTimeout, (unlock) -> resolve unlock
 	return
 
@@ -133,5 +138,7 @@ module.exports = createCache = (id, log) ->
 		elapsed = Date.now() - startTime
 		log 'trace', {type: 'cache:save', key, ttl, elapsed}
 		return
+
+	cache.acquireLock = acquireLock
 
 	return cache

@@ -97,7 +97,7 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 			if opts.cache?
 				if method isnt 'GET'
 					throw new Error "cache: cannot use cache for #{method} requests at #{path}"
-				opts.cache.ttl = 1 / 1000 * ms opts.cache.ttl
+				opts.cache.ttl = ms opts.cache.ttl
 				opts.cache.lockttl = ms opts.cache.lockttl
 
 			for key, param of opts.params

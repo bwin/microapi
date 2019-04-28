@@ -86,6 +86,7 @@ module.exports = microserver =
 				#result = await handleRoute req, res, config
 				result = await handleRoute config, cache, route, req, res
 			catch err
+				console.error err if config.debugLogErrors
 				res.statusCode = err.statusCode or 500
 				req.log err
 				result = err:
