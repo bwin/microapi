@@ -5,3 +5,5 @@ module.exports = config =
 	logLevel: 'off'
 	#logLevel: 'trace'
 	jwtSecret: 'ITDOESNTREALLYMATTER'
+	
+	#debugLogErrors: yes
