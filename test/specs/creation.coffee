@@ -5,26 +5,39 @@ microapi = require '../../index'
 get = require '../get'
 config = require '../test-config'
 
-###
 test 'should throw when the same endpoint is defined twice', (t) ->
 	try
-		server = await microapi.start config, (endpoint) ->
-			'GET /test': -> status: 'OK'
+		server = await microapi.start config,
+			'GET /test': -> x: 1
 			'NAMESPACE /': routes:
-				'GET /test': -> status: 'OK'
+				'GET /test': -> x: 2
 	catch err
 	t.truthy err instanceof Error
 
 	await server?.ready
 	await server?.stop()
 	return
-###
 
+###
 test 'should throw when trying to define a cache for a request that is not GET', (t) ->
 	try
 		server = await microapi.start config,
 			'POST /test'
-				cache: ttl: '1s', lockttl: '1s', key: (req) -> req.path
+				cache: ttl: '1s', key: (req) -> req.path
+				handler: ->
+	catch err
+	t.truthy err instanceof Error
+
+	await server?.ready
+	await server?.stop()
+	return
+
+test 'should throw when trying to define a cache for a request that is a stream', (t) ->
+	try
+		server = await microapi.start config,
+			'GET /stream-and-cache':
+				stream: yes
+				cache: ttl: '1s', key: (req) -> req.path
 				handler: ->
 	catch err
 	t.truthy err instanceof Error
@@ -66,3 +79,4 @@ test 'should throw when trying to define a route with an invalid handler', (t) -
 	await server?.ready
 	await server?.stop()
 	return
+###

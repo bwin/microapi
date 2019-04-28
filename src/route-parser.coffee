@@ -14,9 +14,10 @@ isArrayEqual = (a, b) ->
 	#return _.isEqual _.sortBy(a), _.sortBy(b)
 	return _.isEqual a, b # in our case they are already in the same order
 
-module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
-	routes = {}
-	regexRoutes = {}
+module.exports = routeParser = (routeDefinitions, namespaceOpts={}, routes={}, 
+regexRoutes={}) ->
+	#routes = {}
+	#regexRoutes = {}
 
 	for key, routeOpts of routeDefinitions
 		if typeof routeOpts is 'function' or Array.isArray routeOpts
@@ -50,9 +51,10 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 				unless isArrayEqual namespaceOpts.middleware, opts.middleware
 					opts.middleware = [].concat namespaceOpts.middleware, opts.middleware
 
-			newRoutes = routeParser routeOpts.routes, opts
-			routes = defaultsDeep {}, routes, newRoutes.routes
-			regexRoutes = defaultsDeep {}, regexRoutes, newRoutes.regexRoutes
+			routeParser routeOpts.routes, opts, routes, regexRoutes
+			#newRoutes = routeParser routeOpts.routes, opts
+			#routes = defaultsDeep {}, routes, newRoutes.routes
+			#regexRoutes = defaultsDeep {}, regexRoutes, newRoutes.regexRoutes
 		else # endpoint
 			throw new Error "invalid method '#{method}" unless method in validMethods
 
@@ -88,7 +90,7 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 				opts.regex = new RegExp regex
 			else
 				routes[path] ?= {}
-				if routes[path][method]
+				if routes[path][method]?
 					throw new Error "#{method} #{path} already has a handler"
 				routes[path][method] = opts
 
@@ -97,6 +99,9 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 			if opts.cache?
 				if method isnt 'GET'
 					throw new Error "cache: cannot use cache for #{method} requests at #{path}"
+
+				if opts.stream is yes
+					throw new Error "cache: cannot use cache for requests that stream at #{path}"
 
 				if opts.cache.ttl and typeof opts.cache.ttl not in ['string', 'number']
 					throw new Error 'ttl expected to be `ms` compatible string or number'

@@ -25,8 +25,6 @@ test.after (t) -> await server?.stop()
 
 
 
-# TODO also test cache. load/loadMulti/save/acquireLock
-
 test 'should cache', (t) ->
 	response = await get '/cache-some-val'
 	t.is response.statusCode, 200

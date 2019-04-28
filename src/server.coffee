@@ -89,6 +89,9 @@ module.exports = microserver =
 			try
 				#result = await handleRoute req, res, config
 				result = await handleRoute config, cache, route, req, res
+				if route.stream is yes
+					await new Promise (resolve) -> res.on 'end', resolve
+					result = undefined
 			catch err
 				console.error err if config.debugLogErrors
 				res.statusCode = err.statusCode or 500
@@ -107,7 +110,7 @@ module.exports = microserver =
 				route: req.routeName
 				body: result
 				headers: res.getHeaders()
-				len: json.length
+				len: json?.length or 0
 				elapsed: Date.now() - req.begin
 			return
 

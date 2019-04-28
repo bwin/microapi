@@ -1,20 +1,14 @@
 
 # Microapi documentation
 
-## currently NOT SUPPORTED
-
-- respond with anything else than json
-- anything else than json in req.body
-- streaming of body
-
 ## route options
 
 - auth: (token) -> token.roles.admin
 - ratelimit: max: 3, time: '5s', key: (req) -> req.ip
 - cache:
-		ttl: '5s', key: (req) -> req.path
+		ttl: '10s', key: (req) -> req.path
 		shouldCache: (req) -> not req.something
-		lockttl: '1s'
+		lock: '100ms'
 - params:
 		id: 'int'
 		x: 'string'
@@ -32,14 +26,18 @@
 		params.x + params.y isnt 35
 		params.x - params.y > 10
 	]
+- body: bool
+- stream: bool
+
 - before: [mw1]
 - after: [mw2]
-- afterDynamic: [mw3] # gets run even if result is cached
 
 ## config
 
+- poweredBy: string ('microapi (+https://github.com/bwin/microapi)')
 - port: int (0)
-- disableLogging: bool (no)
+- logLevel: string ('trace')
 - usePmx: bool (no)
 - enableGracefulShutdown: bool (yes)
-- disablePoweredBy: bool (no)
+- cacheHeaders: bool (yes)
+- debugLogErrors: bool (no)

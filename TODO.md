@@ -21,7 +21,7 @@
   - date
 - test more jwt (expired, invalid, alg:none)
 - test middleware
-- test cache
+- test cache: load/loadMulti/save/acquireLock
 - test cache headers
 
 

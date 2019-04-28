@@ -13,7 +13,7 @@ module.exports = extendReqRes = (req, res, route, log, cache) ->
 	isGetReq = req.method is 'GET'
 	body =
 		if isGetReq then null
-		#else if route.body? and route.body is no then null
+		else if route.body? and route.body is no then null
 		else await getStream(req).then (str) -> try JSON.parse str
 
 	addToObject req, {
