@@ -19,9 +19,10 @@ redisMget = promisify redisClient.mget
 redisSetex = (cacheKey, ttl, data) -> new Promise (resolve, reject) ->
 	unless typeof ttl in ['string', 'number']
 		throw new Error 'ttl expected to be `ms` compatible string or number'
-	data = try JSON.stringify data if typeof data is 'object'
 	ttl = ms ttl if typeof ttl is 'string'
 	ttl /= 1000 # redis expects ttl in s
+
+	data = try JSON.stringify data if typeof data is 'object'
 	redisClient.setex cacheKey, ttl, data, (err) ->
 		return reject err if err
 		return resolve()
@@ -31,6 +32,7 @@ acquireLock = (lockKey, lockTimeout) -> new Promise (resolve, reject) ->
 	unless typeof ttl in ['string', 'number']
 		throw new Error 'ttl expected to be `ms` compatible string or number'
 	ttl = ms ttl if typeof ttl is 'string'
+	
 	lock lockKey, lockTimeout, (unlock) -> resolve unlock
 	return
 
