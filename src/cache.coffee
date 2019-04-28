@@ -29,10 +29,10 @@ redisSetex = (cacheKey, ttl, data) -> new Promise (resolve, reject) ->
 	return
 
 acquireLock = (lockKey, lockTimeout) -> new Promise (resolve, reject) ->
-	unless typeof ttl in ['string', 'number']
-		throw new Error 'ttl expected to be `ms` compatible string or number'
-	ttl = ms ttl if typeof ttl is 'string'
-	
+	unless typeof lockTimeout in ['string', 'number']
+		throw new Error 'lockTimeout expected to be `ms` compatible string or number'
+	lockTimeout = ms lockTimeout if typeof lockTimeout is 'string'
+
 	lock lockKey, lockTimeout, (unlock) -> resolve unlock
 	return
 
@@ -59,7 +59,7 @@ await cache 'xy', ttl: '10s',
 module.exports = createCache = (id, log) ->
 	cache = (key, opts, cb, shouldCache=yes) ->
 		{ttl} = opts
-		lockTimeout = opts.lock
+		lockTimeout = opts.lock or 0
 
 		try
 			keyStr = convertkey key

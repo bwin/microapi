@@ -9,8 +9,9 @@ config = require '../test-config'
 test 'should throw when the same endpoint is defined twice', (t) ->
 	try
 		server = await microapi.start config, (endpoint) ->
-			endpoint method: 'GET', path: '/test'
-			endpoint method: 'GET', path: '/test'
+			'GET /test': -> status: 'OK'
+			'NAMESPACE /': routes:
+				'GET /test': -> status: 'OK'
 	catch err
 	t.truthy err instanceof Error
 

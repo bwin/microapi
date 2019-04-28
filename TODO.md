@@ -1,6 +1,7 @@
 
 # TODO
 
+
 - call res.done() in middleware to signal that no further mw should be processed
   - ... while res.__continueExecution
 
@@ -18,10 +19,10 @@
 - test params
   - bool
   - date
-- test ratelimiter with obj-key
 - test more jwt (expired, invalid, alg:none)
 - test middleware
 - test cache
+- test cache headers
 
 
 - middleware:

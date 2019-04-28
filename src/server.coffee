@@ -1,8 +1,9 @@
 
 http = require 'http'
+url = require 'url'
 
-pmx = null
 {defaultsDeep} = require 'lodash'
+pmx = null
 
 defaultConfig = require './default-config'
 routeParser = require './route-parser'
@@ -11,7 +12,6 @@ logger = require './logger'
 createCache = require './cache'
 extendReqRes = require './extend-req-res'
 handleRoute = require './handler'
-
 
 
 module.exports = microserver =
@@ -62,8 +62,14 @@ module.exports = microserver =
 					reqCounter.dec()
 					latencyHistogram.update Date.now() - req.begin
 					return
+			
+			# needed for routing
+			{pathname} = url.parse req.url, yes
+			req.pathname = pathname
+			req.params = {}
 
-			await extendReqRes req, res, log, cache
+			route = router req, res
+			await extendReqRes req, res, route, log, cache
 
 			{method, path, ip, headers, query, body} = req
 			req.log 'info', {
@@ -78,8 +84,6 @@ module.exports = microserver =
 
 			res.setHeader 'Content-Type', 'application/json'
 			res.setHeader 'X-Powered-By', config.poweredBy if config.poweredBy
-
-			route = router req, res
 
 			result = null
 			try

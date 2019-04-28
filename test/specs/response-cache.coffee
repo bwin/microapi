@@ -14,40 +14,36 @@ test.before (t) ->
 	server = microapi.start config,
 
 		'GET /cache':
-			cache: ttl: '1s', lockttl: '1s', key: (req) -> req.path
+			cache: ttl: '1s', key: (req) -> req.path
 			handler: (req, res) -> somevalue: 'XY18'
 
 		'GET /cache-if':
 			params: x: 'int'
 			cache:
-				ttl: '1s', lockttl: '1s'
+				ttl: '1s'
 				key: (req) -> req.path
 				shouldCache: (req) -> req.params.x < 100
 			handler: (req, res) -> somevalue: 'XY18'
 
 		'GET /cache-if-2':
 			params: x: 'int'
-			cache:
-				ttl: '1s', lockttl: '1s'
-				key: (req) -> req.path
+			cache: ttl: '1s', key: (req) -> req.path
 			handler: (req, res) ->
 				res.shouldCache = req.params.x < 100
 				return somevalue: 'XY18'
 
 		'GET /cache-err':
-			cache:
-				ttl: '1s', lockttl: '1s'
-				key: (req) -> req.path
+			cache: ttl: '1s', key: (req) -> req.path
 			handler: (req, res) -> throw new Error 'just an err'
 
 		'GET /cache-slow-req':
-			cache: ttl: '1s', lockttl: '1s', key: (req) -> req.path
+			cache: ttl: '1s', lock: "250ms", key: (req) -> req.path
 			handler: (req, res) ->
-				await wait '500ms'
+				await wait '100ms'
 				return i: ++i
 
 		'GET /cache-obj-key':
-			cache: ttl: '1s', lockttl: '1s', key: (req) -> xy: 18
+			cache: ttl: '1s', key: (req) -> xy: 18
 			handler: (req, res) -> somevalue: 'XY18'
 
 	port = await server.ready
@@ -119,42 +115,54 @@ test 'should cache with obj as cache key', (t) ->
 	return
 
 test 'locking should work', (t) ->
-	response = await get '/cache-slow-req'
-	t.is response.statusCode, 200
+	response1 = get '/cache-slow-req'
+	response2 = get '/cache-slow-req'
+	response3 = get '/cache-slow-req'
+	[response1, response2, response3] = await Promise.all [response1, response2, response3]
+
+	cachedReqCount = 0
+
+	t.is response1.statusCode, 200
 	# should be the 1st time the slow req actually ran
-	t.deepEqual response.body, i: 1
+	t.deepEqual response1.body, i: 1
 	# 1st req shouldn't be cached
-	t.is response.headers['x-cached'], undefined
+	#t.is response1.headers['x-cached'], undefined
+	++cachedReqCount if response1.headers['x-cached'] is 'true'
 
-	response = await get '/cache-slow-req'
-	t.is response.statusCode, 200
+	t.is response2.statusCode, 200
 	# should still be the 1st time the slow req actually ran
-	t.deepEqual response.body, i: 1
+	t.deepEqual response2.body, i: 1
 	# 2nd req should be cached
-	t.is response.headers['x-cached'], 'true'
+	#t.is response2.headers['x-cached'], 'true'
+	++cachedReqCount if response2.headers['x-cached'] is 'true'
 
-	response = await get '/cache-slow-req'
-	t.is response.statusCode, 200
+	t.is response3.statusCode, 200
 	# should still be the 1st time the slow req actually ran
-	t.deepEqual response.body, i: 1
+	t.deepEqual response3.body, i: 1
 	# 3rd req should be cached
-	t.is response.headers['x-cached'], 'true'
+	#t.is response3.headers['x-cached'], 'true'
+	++cachedReqCount if response3.headers['x-cached'] is 'true'
+
+	# exactly 2 req should have been cached
+	t.is cachedReqCount, 2
 
 	await wait '1s'
 
-	response = await get '/cache-slow-req'
-	t.is response.statusCode, 200
-	# should be the 2nd time the slow req actually ran
-	t.deepEqual response.body, i: 2
-	# req after cooldown shouldn't be cached
-	t.is response.headers['x-cached'], undefined
+	response3 = get '/cache-slow-req'
+	response4 = get '/cache-slow-req'
+	[response3, response4] = await Promise.all [response3, response4]
 
-	response = await get '/cache-slow-req'
-	t.is response.statusCode, 200
+	t.is response3.statusCode, 200
+	# should be the 2nd time the slow req actually ran
+	t.deepEqual response3.body, i: 2
+	# req after cooldown shouldn't be cached
+	t.is response3.headers['x-cached'], undefined
+
+	t.is response4.statusCode, 200
 	# should still be the 2nd time the slow req actually ran
-	t.deepEqual response.body, i: 2
+	t.deepEqual response4.body, i: 2
 	# next req should be cached
-	t.is response.headers['x-cached'], 'true'
+	t.is response4.headers['x-cached'], 'true'
 	return
 
 test 'shouldCache should work', (t) ->

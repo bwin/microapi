@@ -8,23 +8,23 @@ addToObject = (obj, objToAdd) ->
 	obj[key] = val for key, val of objToAdd
 	return
 
-module.exports = extendReqRes = (req, res, log, cache) ->
+module.exports = extendReqRes = (req, res, route, log, cache) ->
 	{pathname, query} = url.parse req.url, yes
 	isGetReq = req.method is 'GET'
 	body =
 		if isGetReq then null
-		else
-			await getStream(req).then (str) -> try JSON.parse str
+		#else if route.body? and route.body is no then null
+		else await getStream(req).then (str) -> try JSON.parse str
 
 	addToObject req, {
 		id: uuidv4()
 		log: (level, data) -> log level, {reqid: req.id, data...}
 		cache
-		pathname
+		#pathname
 		path: pathname
 		ip: req.headers['X-Forwared-For'] or res.socket.remoteAddress
 		begin: Date.now()
-		params: {}
+		#params: {}
 		data: {}
 		query: if isGetReq then query else {}
 		body: body

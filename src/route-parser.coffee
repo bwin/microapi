@@ -97,8 +97,14 @@ module.exports = routeParser = (routeDefinitions, namespaceOpts={}) ->
 			if opts.cache?
 				if method isnt 'GET'
 					throw new Error "cache: cannot use cache for #{method} requests at #{path}"
-				opts.cache.ttl = ms opts.cache.ttl
-				opts.cache.lockttl = ms opts.cache.lockttl
+
+				if opts.cache.ttl and typeof opts.cache.ttl not in ['string', 'number']
+					throw new Error 'ttl expected to be `ms` compatible string or number'
+				if opts.cache.lock and typeof opts.cache.lock not in ['string', 'number']
+					throw new Error 'lock expected to be `ms` compatible string or number'
+
+				opts.cache.ttl = ms opts.cache.ttl if typeof opts.cache.ttl is 'string'
+				opts.cache.lock = ms opts.cache.lock if typeof opts.cache.lock is 'string'
 
 			for key, param of opts.params
 				defaults =

@@ -7,4 +7,5 @@ module.exports = get = (url, params, headers) -> await request.get
 	headers: headers
 	json: yes
 	simple: no
+	timeout: 2000
 	resolveWithFullResponse: yes
