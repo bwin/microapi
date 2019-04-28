@@ -15,9 +15,6 @@ isArrayEqual = (a, b) ->
 	return _.isEqual a, b # in our case they are already in the same order
 
 module.exports = routeParser = (defs, nsOpts={}, routes={}, regexRoutes={}) ->
-	#routes = {}
-	#regexRoutes = {}
-
 	for key, routeOpts of defs
 		if typeof routeOpts is 'function' or Array.isArray routeOpts
 			handler = routeOpts
@@ -51,9 +48,6 @@ module.exports = routeParser = (defs, nsOpts={}, routes={}, regexRoutes={}) ->
 					opts.middleware = [].concat nsOpts.middleware, opts.middleware
 
 			routeParser routeOpts.routes, opts, routes, regexRoutes
-			#newRoutes = routeParser routeOpts.routes, opts
-			#routes = defaultsDeep {}, routes, newRoutes.routes
-			#regexRoutes = defaultsDeep {}, regexRoutes, newRoutes.regexRoutes
 		else # endpoint
 			throw new Error "invalid method '#{method}" unless method in validMethods
 
