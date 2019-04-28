@@ -41,11 +41,11 @@ test.after (t) -> await server?.stop()
 
 
 
-test 'req.body should be null when using body: no', (t) ->
+test 'req.body should be undefined when using body: no', (t) ->
 	data = x: 'abcdef'
 	response = await post '/no-body', data
 	t.is response.statusCode, 200
-	t.deepEqual response.body, null
+	t.is response.body, undefined
 	return
 
 test 'streaming should work', (t) ->
