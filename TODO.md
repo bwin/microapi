@@ -12,7 +12,7 @@
 
 - maybe middleware becomes before/after
 
-- TEST NAMESPACES
+- TEST NAMESPACE inheritance
 - test 2 servers with same port should fail (and improve coverage)
 - test params
   - bool
