@@ -19,11 +19,12 @@ test.before (t) ->
 			handler: (req, res) -> req.params
 
 		'POST /upload':
-			#params: id: 'string'
-			json: no
+			params: id: 'int'
+			json: no # TODO remove this
+			form: yes
 			handler: (req, res) ->
-				console.log "body=", req.body
-				return req.body
+				params: req.params
+				files: req.body.files
 
 	port = await server.ready
 	upload.baseUrl = "http://127.0.0.1:#{port}"
@@ -32,22 +33,24 @@ test.before (t) ->
 test.after (t) -> await server?.stop()
 
 
-test '[TODO] move upload to @bwin/microapi-upload', (t) -> t.truthy yes
 
-###
 test 'file uploads should work', (t) ->
 	data = id: 123
 	files =
 		'msg.txt':
-			type: 'text/plain'
+			contentType: 'text/plain'
 			content: 'msg'
 		'readme.txt':
-			type: 'text/plain'
+			contentType: 'text/plain'
 			content: 'help'
 	response = await upload '/upload', data, files
-	console.error response.body
 	t.is response.statusCode, 200
-	t.deepEqual response.body.data, data
-	t.deepEqual response.body.files, files
+	t.deepEqual response.body.params, data
+
+	i = 0
+	for filename, file of files
+		uploadedFile = response.body.files["file#{i++}"]
+		t.is uploadedFile.name, filename
+		t.is uploadedFile.type, file.contentType
+		t.is uploadedFile.size, file.content.length
 	return
-###

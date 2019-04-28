@@ -36,7 +36,6 @@ Small and opinionated api-server framework with few dependencies.
 - mysql db [@bwin/microapi-db-mysql]
 - render pug templates [@bwin/microapi-render-pug]
 - formdata handling [@bwin/microapi-formdata]
-- file uploads [@bwin/microapi-upload]
 
 ## Getting started
 

@@ -13,7 +13,6 @@ createCache = require './cache'
 extendReqRes = require './extend-req-res'
 handleRoute = require './handler'
 
-
 module.exports = microserver =
 	start: (config, routeDefinitions) ->
 		config = defaultsDeep {}, config, defaultConfig

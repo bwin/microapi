@@ -3,9 +3,21 @@ url = require 'url'
 
 uuidv4 = require 'uuid/v4'
 getStream = require 'get-stream'
+formidable = require 'formidable'
 
 addToObject = (obj, objToAdd) ->
 	obj[key] = val for key, val of objToAdd
+	return
+
+parseForm = (req, opts) -> new Promise (resolve, reject) -> 
+	form = new formidable.IncomingForm()
+	
+	if typeof opts is 'object'
+		form[key] = val for key, val of opts
+	
+	form.parse req, (err, fields, files) ->
+		return reject err if err
+		return resolve {fields, files}
 	return
 
 module.exports = extendReqRes = (req, res, route, log, cache) ->
@@ -15,6 +27,9 @@ module.exports = extendReqRes = (req, res, route, log, cache) ->
 		if isGetReq then undefined
 		else if route?.body? and route.body is no then undefined
 		#else await getStream(req).then (str) -> try JSON.parse str
+		else if route?.form and route.form
+			{fields, files} = await parseForm req, route.form
+			{fields..., files}
 		else await getStream req
 	
 	unless route?.json? and not route.json
