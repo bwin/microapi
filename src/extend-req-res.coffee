@@ -9,7 +9,7 @@ addToObject = (obj, objToAdd) ->
 	obj[key] = val for key, val of objToAdd
 	return
 
-parseForm = (req, opts) -> new Promise (resolve, reject) -> 
+parseForm = (req, opts) -> new Promise (resolve, reject) ->
 	form = new formidable.IncomingForm()
 	
 	if typeof opts is 'object'
