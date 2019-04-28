@@ -18,7 +18,6 @@ test 'should throw when the same endpoint is defined twice', (t) ->
 	await server?.stop()
 	return
 
-###
 test 'should throw when trying to define a cache for a request that is not GET', (t) ->
 	try
 		server = await microapi.start config,
@@ -79,4 +78,3 @@ test 'should throw when trying to define a route with an invalid handler', (t) -
 	await server?.ready
 	await server?.stop()
 	return
-###
