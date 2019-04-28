@@ -5,6 +5,11 @@
 - call res.done() in middleware to signal that no further mw should be processed
   - ... while res.__continueExecution
 
+
+- traditional mw to ma-mw:
+  mw = (req, res) -> new Promise (resolve) -> oldmw req, res, resolve
+
+
 - maybe middleware becomes before/after
 
 - TEST NAMESPACES
@@ -14,26 +19,17 @@
   - date
 - test cache: load/loadMulti/save/acquireLock/cbShouldCache
 
+- expose jwt/auth to req/res
 
 - middleware:
   - microapi-db-mysql
   - microapi-render-pug
-
-- 'GET /stream':
-    stream: yes
-    handler: (req, res) ->
-  - also test this
-  - forbid with cache (xor)
-  - or body: no ?
+  - microapi-formdata
+  - microapi-upload
 
 
-- but wut about file uploads?
+- but wut about file uploads? (middleware?)
 
-
-- X paramtype: date (moment)
-- X paramtype: bool
-- X paramtype: object
-- X paramtype: array
 - paramtype: email
 - paramtype: url
 - paramtype: url:(absolute|relative|local|remote|file|http|https|ws)?
@@ -42,7 +38,7 @@
 - server.ready (port, routes)
 - lookat npm/deep-metrics
 
-- how to use socketio? (maybe also return server from .ready?)
+- how to use socketio?
 
 
 

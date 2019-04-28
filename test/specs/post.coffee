@@ -18,6 +18,11 @@ test.before (t) ->
 				arr: 'array'
 			handler: (req, res) -> req.params
 
+		'POST /upload':
+			handler: (req, res) ->
+				console.log req
+				return req.params
+
 	port = await server.ready
 	post.baseUrl = "http://127.0.0.1:#{port}"
 	return

@@ -128,6 +128,9 @@ module.exports = microserver =
 				resolve adr.port
 				return
 
+		server.routes = routes
+		server.regexRoutes = regexRoutes
+
 		#server.closed = new Promise (resolve, reject) ->
 		#	server.on 'closed', resolve
 		#	return

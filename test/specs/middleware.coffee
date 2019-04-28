@@ -18,6 +18,26 @@ test.before (t) ->
 				return res.data
 		]
 
+		# this namespace doesnt work
+		# TODO why?
+		'NAMESPACE /':
+			middleware: (req, res, next) ->
+				res.data.y1 = 1
+				return next()
+			routes:
+				'GET /connect-middleware': (req, res) ->
+					res.data.y2 = 2
+					return
+
+		'GET /connect-middleware': [
+			(req, res, next) ->
+				res.data.y1 = 1
+				return next()
+			(req, res) ->
+				res.data.y2 = 2
+				return
+		]
+
 		'NAMESPACE /':
 			middleware: (req, res) ->
 				res.data.x1 = 1
@@ -42,6 +62,13 @@ test.before (t) ->
 	return
 
 test.after (t) -> await server?.stop()
+
+test 'connect-style middleware defined on namespace should work', (t) ->
+	response = await get '/connect-middleware'
+	t.deepEqual response.body,
+		y1: 1
+		y2: 2
+	return
 
 test 'middleware defined on namespace should work', (t) ->
 	response = await get '/test'

@@ -4,7 +4,7 @@ escapeRegex = require 'escape-string-regexp'
 _ = require 'lodash'
 {defaultsDeep} = _
 
-validMethods = 'HEAD GET POST PUT DELETE'.split ' '
+validMethods = 'HEAD GET POST PUT PATCH DELETE'.split ' '
 validTypes = 'int string date'.split ' '
 
 isArrayEqual = (a, b) ->
@@ -69,6 +69,8 @@ regexRoutes={}) ->
 				arr = opts.handler
 				opts.handler = do (arr) -> (req, res) ->
 					for fn in arr
+						if fn.length is 3 # connect-style middleware
+							fn = do (fn) -> (req, res) -> new Promise (resolve) -> fn req, res, resolve
 						data = await fn req, res
 						res.data = data if data
 					return res.data

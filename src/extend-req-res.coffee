@@ -13,8 +13,12 @@ module.exports = extendReqRes = (req, res, route, log, cache) ->
 	isGetReq = req.method is 'GET'
 	body =
 		if isGetReq then undefined
-		else if route.body? and route.body is no then undefined
-		else await getStream(req).then (str) -> try JSON.parse str
+		else if route?.body? and route.body is no then undefined
+		#else await getStream(req).then (str) -> try JSON.parse str
+		else await getStream req
+	
+	unless route?.json? and not route.json
+		body = try JSON.parse body
 
 	addToObject req, {
 		id: uuidv4()
