@@ -34,7 +34,7 @@
     "get-stream": "^5.1.0",
     "http-errors": "^1.7.2",
     "jsonwebtoken": "^8.5.1",
-    "lodash": "^4.17.13",
+    "lodash": "^4.17.14",
     "ms": "^2.1.1",
     "redis": "^2.8.0",
     "redis-lock": "^0.1.4",
