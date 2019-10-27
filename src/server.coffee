@@ -72,7 +72,7 @@ extendReqRes = (req, res, log) ->
 		log: (level, data) -> log level, {reqid: req.id, data...}
 		pathname
 		path: pathname
-		ip: req.headers['X-Forwared-For'] or res.socket.remoteAddress
+		ip: req.headers['X-Forwarded-For'] or res.socket.remoteAddress
 		begin: Date.now()
 		params: {}
 		data: {}
