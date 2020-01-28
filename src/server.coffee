@@ -117,7 +117,7 @@ module.exports = microserver =
 			return
 
 		server.ready = new Promise (resolve, reject) ->
-			server.listen config.port, (err) ->
+			server.listen config.port, config.bindToIp, (err) ->
 				### istanbul ignore next ###
 				return reject err if err
 				log 'info',

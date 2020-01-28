@@ -2,12 +2,19 @@
 # TODO
 
 
+
+- maybe:
+	private: yes on route
+	and block all traffic not from 127.0.0.1 with UNAUTHORIZED?
+
+
 - call res.done() in middleware to signal that no further mw should be processed
   - ... while res.__continueExecution
 
 
 - traditional mw to ma-mw:
   mw = (req, res) -> new Promise (resolve) -> oldmw req, res, resolve
+  NOOOO, some will never resolve!
 
 
 - maybe middleware becomes before/after
@@ -18,6 +25,8 @@
   - bool
   - date
 - test cache: load/loadMulti/save/acquireLock/cbShouldCache
+- form-opts
+- ratelimit headers
 
 - expose jwt/auth to req/res
 
