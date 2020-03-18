@@ -1,6 +1,6 @@
 {
   "name": "@bwin/microapi",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "MIT",
   "author": "Benjamin Winkler [bwin]",
   "main": "index.js",
