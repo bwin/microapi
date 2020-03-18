@@ -140,3 +140,7 @@ microapi.start config,
 		# {method, path, url, params, ip, headers} = req
 		# return {method, path, url, params, ip, headers}
 		x: 'catchall'
+
+	'SOCKETIO /socket.io': (socket) ->
+		socket.on 'disconnect', ->
+		socket.on 'chatmsg', (msg) ->
