@@ -17,9 +17,9 @@ test.before (t) ->
 			routes:
 				'GET /': -> status: 'index'
 				'GET /test': -> status: 'test'
-				'GET /connect-middleware': (req, res) ->
-					res.data.y2 = 2
-					return
+				# 'GET /connect-middleware': (req, res) ->
+				# 	res.data.y2 = 2
+				# 	return
 
 		'NAMESPACE /user':
 			routes:
@@ -47,7 +47,7 @@ getRoute = (method, path) -> server.routes[path]?[method]?
 test 'namespaced routes should work', (t) ->
 	t.truthy getRoute 'GET', '/'
 	t.truthy getRoute 'GET', '/test'
-	t.truthy getRoute 'GET', '/connect-middleware'
+	# t.truthy getRoute 'GET', '/connect-middleware'
 	t.truthy getRoute 'GET', '/user/settings'
 	t.truthy getRoute 'GET', '/user/list/all'
 	t.truthy getRoute 'GET', '/user/list/some'
@@ -61,9 +61,9 @@ test 'namespace inheritance should work', (t) ->
 	return
 ###
 
-test 'connect-style middleware defined on namespace should work', (t) ->
-	response = await get '/connect-middleware'
-	t.deepEqual response.body,
-		y1: 1
-		y2: 2
-	return
+# test 'connect-style middleware defined on namespace should work', (t) ->
+# 	response = await get '/connect-middleware'
+# 	t.deepEqual response.body,
+# 		y1: 1
+# 		y2: 2
+# 	return

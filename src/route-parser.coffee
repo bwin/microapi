@@ -62,9 +62,10 @@ module.exports = routeParser = (defs, nsOpts={}, routes={}, regexRoutes={}) ->
 				arr = opts.handler
 				opts.handler = do (arr) -> (req, res) ->
 					for fn in arr
-						if fn.length is 3 # connect-style middleware
-							fn = do (fn) -> (req, res) -> new Promise (resolve) ->
-								return fn req, res, resolve
+						# if fn.length is 3 # connect-style middleware
+						# 	fn = do (fn) -> (req, res) -> new Promise (resolve) ->
+						# 		return fn req, res, resolve
+						continue unless res.__continueExecution
 						data = await fn req, res
 						res.data = data if data
 					return res.data

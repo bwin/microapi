@@ -37,6 +37,7 @@
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.11",
     "ms": "^2.1.1",
+    "mysql": "^2.18.1",
     "redis": "^2.8.0",
     "redis-lock": "^0.1.4",
     "strict-rate-limiter": "0.1.3",

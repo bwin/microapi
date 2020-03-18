@@ -10,6 +10,7 @@ routeParser = require './route-parser'
 createRouter = require './router'
 logger = require './logger'
 createCache = require './cache'
+dbFactory = require './db'
 extendReqRes = require './extend-req-res'
 handleRoute = require './handler'
 
@@ -25,6 +26,14 @@ module.exports = microserver =
 		log 'info', type: 'start'
 
 		cache = createCache config.id, log
+		db = null
+		unless config.mysql
+			noDb = -> throw new Error 'no mysql config'
+			db =
+				queryPromise: noDb
+				dbsafe: noDb
+		else
+			db = dbFactory config
 
 		{routes, regexRoutes} = routeParser routeDefinitions
 		router = createRouter routes, regexRoutes
@@ -68,7 +77,7 @@ module.exports = microserver =
 			req.params = {}
 
 			route = router req, res
-			await extendReqRes req, res, route, log, cache
+			await extendReqRes req, res, route, log, cache, db
 
 			{method, path, ip, headers, query, body} = req
 			req.log 'info', {

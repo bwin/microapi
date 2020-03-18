@@ -20,7 +20,7 @@ parseForm = (req, opts) -> new Promise (resolve, reject) ->
 		return resolve {fields, files}
 	return
 
-module.exports = extendReqRes = (req, res, route, log, cache) ->
+module.exports = extendReqRes = (req, res, route, log, cache, db) ->
 	{pathname, query} = url.parse req.url, yes
 	isGetReq = req.method is 'GET'
 	body =
@@ -38,6 +38,10 @@ module.exports = extendReqRes = (req, res, route, log, cache) ->
 		id: uuidv4()
 		log: (level, data) -> log level, {reqid: req.id, data...}
 		cache
+		db:
+			queryPromise: -> db.queryPromise req, ...arguments
+			dbsafe: -> db.dbsafe req, ...arguments
+			escape: -> db.escape ...arguments
 		#pathname
 		path: pathname
 		ip: req.headers['X-Forwared-For'] or res.socket.remoteAddress
@@ -49,12 +53,18 @@ module.exports = extendReqRes = (req, res, route, log, cache) ->
 		sourceParams: if isGetReq then query else body
 	}
 
+	res.$$end = res.end
+
 	#res.data = {}
 	addToObject res, {
 		data: {}
 		__continueExecution: yes
 		done: ->
 			res.__continueExecution = no
+			return
+		end: ->
+			res.__continueExecution = no
+			res.$$end ...arguments
 			return
 	}
 	return

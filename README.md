@@ -23,6 +23,7 @@ Small and opinionated api-server framework with few dependencies.
 - auth: jwt
 - request handler: promise
 - caching: redis
+- db: mysql
 - logger: bunyan
 - process-manager: pm2
 - default output: json
